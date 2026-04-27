@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Alıntı Koleksiyonu - MotivaSyon{% endblock %}
+{% block page_title %}Alıntı Koleksiyonu{% endblock %}
+
+{% block content %}
+
+<!-- Kategori filtresi -->
+<div class="filter-row mb-4">
+    <a href="{{ url_for('quotes.collection') }}"
+       class="filter-btn {% if not selected_category %}active{% endif %}">
+        <i class="fas fa-th"></i> Tümü
+    </a>
+    {% for cat in categories %}
+    <a href="{{ url_for('quotes.collection', category=cat['category']) }}"
+       class="filter-btn {% if selected_category == cat['category'] %}active{% endif %}">
+        {{ cat['category'].capitalize() }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Alıntı kartları grid -->
+<div class="quotes-grid">
+    {% for quote in quotes %}
+    <div class="quote-card-full">
+        <div class="quote-card-inner">
+            <div class="quote-icon-top">
+                <i class="fas fa-quote-left"></i>
+            </div>
+
+            <p class="quote-text-full">{{ quote['text'] }}</p>
+            <cite class="quote-author-full">— {{ quote['author'] }}</cite>
+
+            <div class="quote-card-footer">
+                <span class="category-pill category-{{ quote['category'] }}">
+                    {{ quote['category'] }}
+                </span>
+
+                <!-- Favori toggle butonu - AJAX ile çalışıyor -->
+                <button class="btn-fav {% if quote['id'] in fav_ids %}active{% endif %}"
+                        id="fav-{{ quote['id'] }}"
+                        onclick="toggleFavorite({{ quote['id'] }})">
+                    <i class="fas fa-heart"></i>
+                    <span>{{ 'Favorilerde' if quote['id'] in fav_ids else 'Favorilere Ekle' }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not quotes %}
+<div class="empty-state">
+    <div class="empty-icon">📚</div>
+    <h3>Bu kategoride alıntı bulunamadı.</h3>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Favori ekle/çıkar - sunucuya AJAX isteği atıyorum
+    function toggleFavorite(quoteId) {
+        fetch(`/toggle-favorite/${quoteId}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                const btn = document.getElementById(`fav-${quoteId}`);
+                if (data.is_favorite) {
+                    btn.classList.add('active');
+                    btn.querySelector('span').textContent = 'Favorilerde';
+                    showToast('Favorilere eklendi!', 'success');
+                } else {
+                    btn.classList.remove('active');
+                    btn.querySelector('span').textContent = 'Favorilere Ekle';
+                    showToast('Favorilerden çıkarıldı.', 'info');
+                }
+                // Favorilere ekledikten sonra rozet kontrolü
+                checkBadges();
+            });
+    }
+</script>
+{% endblock %}

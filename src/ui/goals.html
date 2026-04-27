@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Hedeflerim - MotivaSyon{% endblock %}
+{% block page_title %}Hedeflerim{% endblock %}
+
+{% block content %}
+
+<!-- Hedef ekleme formu -->
+<div class="section-card mb-4">
+    <div class="section-card-header" data-bs-toggle="collapse" data-bs-target="#addGoalForm" style="cursor:pointer">
+        <h3><i class="fas fa-plus-circle me-2"></i>Yeni Hedef Ekle</h3>
+        <i class="fas fa-chevron-down"></i>
+    </div>
+
+    <div class="collapse" id="addGoalForm">
+        <form action="{{ url_for('goals.add_goal') }}" method="post" class="goal-form">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label-custom">Hedef Başlığı *</label>
+                    <input type="text" name="title" class="form-control-custom" placeholder="Örn: Her gün 30 dk spor yap" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label-custom">Kategori</label>
+                    <select name="category" class="form-control-custom">
+                        <option value="sağlık">Sağlık</option>
+                        <option value="kariyer">Kariyer</option>
+                        <option value="eğitim">Eğitim</option>
+                        <option value="kişisel">Kişisel Gelişim</option>
+                        <option value="finans">Finans</option>
+                        <option value="ilişkiler">İlişkiler</option>
+                        <option value="hobi">Hobi</option>
+                        <option value="genel">Genel</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label-custom">Bitiş Tarihi</label>
+                    <input type="date" name="deadline" class="form-control-custom">
+                </div>
+                <div class="col-12">
+                    <label class="form-label-custom">Açıklama</label>
+                    <textarea name="description" class="form-control-custom" rows="2" placeholder="Hedefin hakkında birkaç cümle..."></textarea>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn-primary-custom">
+                        <i class="fas fa-plus me-2"></i>Hedef Ekle
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Filtre butonları -->
+<div class="filter-row mb-4">
+    <a href="{{ url_for('goals.goals', filter='all') }}"
+       class="filter-btn {% if filter_type == 'all' %}active{% endif %}">
+        <i class="fas fa-list"></i> Tümü
+    </a>
+    <a href="{{ url_for('goals.goals', filter='active') }}"
+       class="filter-btn {% if filter_type == 'active' %}active{% endif %}">
+        <i class="fas fa-spinner"></i> Devam Ediyor
+    </a>
+    <a href="{{ url_for('goals.goals', filter='completed') }}"
+       class="filter-btn {% if filter_type == 'completed' %}active{% endif %}">
+        <i class="fas fa-check-circle"></i> Tamamlananlar
+    </a>
+</div>
+
+<!-- Hedef kartları -->
+{% if goals %}
+<div class="goals-grid">
+    {% for goal in goals %}
+    <div class="goal-card {% if goal['is_completed'] %}completed{% endif %}" id="goal-{{ goal['id'] }}">
+        <div class="goal-card-header">
+            <div class="goal-category-badge">{{ goal['category'] or 'Genel' }}</div>
+            <div class="goal-actions">
+                {% if not goal['is_completed'] %}
+                <button class="btn-icon btn-complete" onclick="completeGoal({{ goal['id'] }})" title="Tamamla">
+                    <i class="fas fa-check"></i>
+                </button>
+                {% endif %}
+                <button class="btn-icon btn-delete" onclick="deleteGoal({{ goal['id'] }})" title="Sil">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+
+        <h4 class="goal-title">
+            {% if goal['is_completed'] %}<i class="fas fa-check-circle text-success me-1"></i>{% endif %}
+            {{ goal['title'] }}
+        </h4>
+
+        {% if goal['description'] %}
+        <p class="goal-description">{{ goal['description'] }}</p>
+        {% endif %}
+
+        {% if goal['deadline'] %}
+        <div class="goal-deadline">
+            <i class="fas fa-calendar-alt"></i>
+            {{ goal['deadline'][:10] }}
+        </div>
+        {% endif %}
+
+        <!-- İlerleme çubuğu -->
+        <div class="progress-section">
+            <div class="progress-header">
+                <span>İlerleme</span>
+                <span class="progress-pct" id="pct-{{ goal['id'] }}">{{ goal['progress'] }}%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="fill-{{ goal['id'] }}"
+                     style="width: {{ goal['progress'] }}%"></div>
+            </div>
+            {% if not goal['is_completed'] %}
+            <input type="range" class="progress-slider" min="0" max="100"
+                   value="{{ goal['progress'] }}"
+                   oninput="updateProgress({{ goal['id'] }}, this.value)">
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🎯</div>
+    <h3>Henüz hedef eklemedin</h3>
+    <p>Yukarıdaki formu kullanarak ilk hedefinizi ekleyin ve yolculuğunuza başlayın!</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Hedefi tamamlıyorum - AJAX ile sunucuya gönderiyorum
+    function completeGoal(goalId) {
+        if (!confirm('Bu hedefi tamamlandı olarak işaretlemek istiyor musun?')) return;
+
+        fetch(`/goals/complete/${goalId}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const card = document.getElementById(`goal-${goalId}`);
+                    card.classList.add('completed', 'completing');
+                    showToast('Hedef tamamlandı! Tebrikler!', 'success');
+                    checkBadges();
+                    setTimeout(() => location.reload(), 1500);
+                }
+            });
+    }
+
+    // Hedefi siliyorum
+    function deleteGoal(goalId) {
+        if (!confirm('Bu hedefi silmek istiyor musun?')) return;
+
+        fetch(`/goals/delete/${goalId}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const card = document.getElementById(`goal-${goalId}`);
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.8)';
+                    setTimeout(() => card.remove(), 300);
+                    showToast('Hedef silindi.', 'info');
+                }
+            });
+    }
+
+    // İlerleme kaydırıcısını dinliyorum - 500ms debounce ile gönderiyorum
+    let progressTimers = {};
+    function updateProgress(goalId, value) {
+        document.getElementById(`pct-${goalId}`).textContent = value + '%';
+        document.getElementById(`fill-${goalId}`).style.width = value + '%';
+
+        clearTimeout(progressTimers[goalId]);
+        progressTimers[goalId] = setTimeout(() => {
+            const formData = new FormData();
+            formData.append('progress', value);
+            fetch(`/goals/progress/${goalId}`, { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.completed) {
+                        showToast('Harika! Hedef tamamlandı!', 'success');
+                        checkBadges();
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                });
+        }, 500);
+    }
+</script>
+{% endblock %}

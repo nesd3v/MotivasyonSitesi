@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil - MotivaSyon{% endblock %}
+{% block page_title %}Profilim & Rozetlerim{% endblock %}
+
+{% block content %}
+
+<!-- Profil bilgi kartı -->
+<div class="profile-hero">
+    <div class="profile-avatar-large">{{ user['username'][0].upper() }}</div>
+    <div class="profile-hero-info">
+        <h2>{{ user['username'] }}</h2>
+        <p class="profile-since">Katılım: {{ format_date(user['created_at']) }}</p>
+        <div class="profile-streak-display">
+            <span class="streak-fire-big">🔥</span>
+            <strong>{{ user['streak'] }}</strong>
+            <span>günlük seri</span>
+        </div>
+    </div>
+
+    <!-- Genel istatistikler -->
+    <div class="profile-stats-row">
+        <div class="profile-stat">
+            <span class="pstat-num">{{ stats.goals_total }}</span>
+            <span class="pstat-label">Toplam Hedef</span>
+        </div>
+        <div class="profile-stat">
+            <span class="pstat-num">{{ stats.goals_completed }}</span>
+            <span class="pstat-label">Tamamlanan</span>
+        </div>
+        <div class="profile-stat">
+            <span class="pstat-num">{{ stats.notes_count }}</span>
+            <span class="pstat-label">Not</span>
+        </div>
+        <div class="profile-stat">
+            <span class="pstat-num">{{ stats.favorites_count }}</span>
+            <span class="pstat-label">Favori</span>
+        </div>
+        <div class="profile-stat highlight-stat">
+            <span class="pstat-num">{{ stats.badges_count }}</span>
+            <span class="pstat-label">Rozet</span>
+        </div>
+    </div>
+</div>
+
+<!-- Rozetler bölümü -->
+<div class="section-card mb-4">
+    <div class="section-card-header">
+        <h3><i class="fas fa-medal me-2"></i>Rozetlerim
+            <span class="badge-count-pill">{{ stats.badges_count }} / {{ all_badges|length }}</span>
+        </h3>
+    </div>
+
+    <div class="badges-grid">
+        {% for badge in all_badges %}
+        <div class="badge-item {% if badge['id'] in earned_ids %}earned{% else %}locked{% endif %}">
+            <div class="badge-icon-wrap">
+                <span class="badge-emoji">{{ badge['icon'] }}</span>
+                {% if badge['id'] not in earned_ids %}
+                <div class="badge-lock-overlay"><i class="fas fa-lock"></i></div>
+                {% endif %}
+            </div>
+            <div class="badge-item-info">
+                <strong>{{ badge['name'] }}</strong>
+                <small>{{ badge['description'] }}</small>
+                {% if badge['id'] not in earned_ids %}
+                <span class="badge-condition">
+                    {% if badge['condition_type'] == 'streak' %}{{ badge['condition_value'] }} günlük seri
+                    {% elif badge['condition_type'] == 'goals_completed' %}{{ badge['condition_value'] }} hedef tamamla
+                    {% elif badge['condition_type'] == 'notes_count' %}{{ badge['condition_value'] }} not yaz
+                    {% elif badge['condition_type'] == 'favorites_count' %}{{ badge['condition_value'] }} favori ekle
+                    {% endif %}
+                </span>
+                {% else %}
+                <span class="badge-earned-label"><i class="fas fa-check me-1"></i>Kazanıldı!</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Favori alıntılar -->
+{% if favorites %}
+<div class="section-card mb-4">
+    <div class="section-card-header">
+        <h3><i class="fas fa-heart me-2"></i>Favori Alıntılarım</h3>
+    </div>
+    <div class="favorites-list">
+        {% for fav in favorites %}
+        <div class="fav-quote-item">
+            <i class="fas fa-quote-left fav-quote-icon"></i>
+            <div class="fav-quote-content">
+                <p>{{ fav['text'] }}</p>
+                <cite>— {{ fav['author'] }}</cite>
+            </div>
+            <span class="fav-category-tag">{{ fav['category'] }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Bildirim geçmişi -->
+<div class="section-card">
+    <div class="section-card-header">
+        <h3><i class="fas fa-history me-2"></i>Bildirim Geçmişi</h3>
+        {% if all_notifications %}
+        <button class="btn-read-all" onclick="markAllRead()">Tümünü Oku</button>
+        {% endif %}
+    </div>
+
+    {% if all_notifications %}
+    <div class="notif-history-list">
+        {% for notif in all_notifications %}
+        <div class="notif-history-item {% if not notif['is_read'] %}unread{% endif %}"
+             onclick="markRead({{ notif['id'] }})" id="notif-{{ notif['id'] }}">
+            <div class="notif-icon-wrap notif-type-{{ notif['type'] }}">
+                {% if notif['type'] == 'badge' %}<i class="fas fa-medal"></i>
+                {% elif notif['type'] == 'goal' %}<i class="fas fa-bullseye"></i>
+                {% else %}<i class="fas fa-bolt"></i>
+                {% endif %}
+            </div>
+            <div class="notif-content">
+                <strong>{{ notif['title'] }}</strong>
+                <p>{{ notif['message'] }}</p>
+                <small>{{ notif['created_at'][:16] }}</small>
+            </div>
+            {% if not notif['is_read'] %}<span class="unread-dot"></span>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-small">
+        <i class="fas fa-bell-slash"></i>
+        <p>Henüz bildirim geçmişi yok.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Sayfa yüklendiğinde rozet kontrolü yapıyorum
+    document.addEventListener('DOMContentLoaded', function() {
+        checkBadges();
+    });
+</script>
+{% endblock %}

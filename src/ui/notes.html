@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Günlüğüm - MotivaSyon{% endblock %}
+{% block page_title %}Kişisel Günlüğüm{% endblock %}
+
+{% block content %}
+
+<!-- Not ekleme formu -->
+<div class="section-card mb-4">
+    <div class="section-card-header" data-bs-toggle="collapse" data-bs-target="#addNoteForm" style="cursor:pointer">
+        <h3><i class="fas fa-pen me-2"></i>Yeni Not Yaz</h3>
+        <i class="fas fa-chevron-down"></i>
+    </div>
+
+    <div class="collapse show" id="addNoteForm">
+        <form action="{{ url_for('notes.add_note') }}" method="post" class="note-form">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label-custom">Başlık *</label>
+                    <input type="text" name="title" class="form-control-custom"
+                           placeholder="Bu anı başlıklandır..." required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label-custom">Bugün nasılsın?</label>
+                    <div class="mood-selector">
+                        <label class="mood-option">
+                            <input type="radio" name="mood" value="happy">
+                            <span class="mood-btn" title="Mutlu">😊</span>
+                        </label>
+                        <label class="mood-option">
+                            <input type="radio" name="mood" value="motivated" checked>
+                            <span class="mood-btn" title="Motivasyonlu">💪</span>
+                        </label>
+                        <label class="mood-option">
+                            <input type="radio" name="mood" value="neutral">
+                            <span class="mood-btn" title="Normal">😐</span>
+                        </label>
+                        <label class="mood-option">
+                            <input type="radio" name="mood" value="tired">
+                            <span class="mood-btn" title="Yorgun">😴</span>
+                        </label>
+                        <label class="mood-option">
+                            <input type="radio" name="mood" value="sad">
+                            <span class="mood-btn" title="Üzgün">😔</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label-custom">İçerik *</label>
+                    <textarea name="content" class="form-control-custom" rows="4"
+                              placeholder="Bugün ne hissettin? Ne öğrendin? Seni motive eden ne oldu?"
+                              required></textarea>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn-primary-custom">
+                        <i class="fas fa-save me-2"></i>Notu Kaydet
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Notlar listesi -->
+{% if notes %}
+<div class="notes-grid">
+    {% for note in notes %}
+    <div class="note-card" id="note-{{ note['id'] }}" onclick="viewNote({{ note['id'] }})">
+        <div class="note-card-header">
+            <span class="note-mood">{{ get_mood_emoji(note['mood']) }}</span>
+            <span class="note-date">{{ note['created_at'][:10] }}</span>
+            <button class="btn-icon btn-delete note-delete-btn"
+                    onclick="event.stopPropagation(); deleteNote({{ note['id'] }})"
+                    title="Sil">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <h4 class="note-title">{{ note['title'] }}</h4>
+        <p class="note-preview">
+            {{ note['content'][:120] }}{% if note['content']|length > 120 %}...{% endif %}
+        </p>
+        <div class="note-footer">
+            <span class="note-read-more">Devamını oku <i class="fas fa-arrow-right"></i></span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📓</div>
+    <h3>Henüz not yazmadın</h3>
+    <p>Düşüncelerini, hedeflerini ve hissettiklerini buraya yazabilirsin.</p>
+</div>
+{% endif %}
+
+<!-- Not detay modal -->
+<div class="modal fade" id="noteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content custom-modal">
+            <div class="modal-header custom-modal-header">
+                <div class="modal-mood-title">
+                    <span id="modalMood" class="modal-mood-emoji"></span>
+                    <h5 class="modal-title" id="modalTitle"></h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body custom-modal-body">
+                <p id="modalContent" class="note-content-full"></p>
+                <small id="modalDate" class="text-muted"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Notu modal'da açıyorum - AJAX ile içeriği çekiyorum
+    function viewNote(noteId) {
+        fetch(`/notes/get/${noteId}`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('modalMood').textContent = data.mood_emoji;
+                document.getElementById('modalTitle').textContent = data.title;
+                document.getElementById('modalContent').textContent = data.content;
+                document.getElementById('modalDate').textContent = data.created_at?.slice(0, 16) || '';
+                new bootstrap.Modal(document.getElementById('noteModal')).show();
+            });
+    }
+
+    // Notu siliyorum - kart animasyonuyla kayboluyor
+    function deleteNote(noteId) {
+        if (!confirm('Bu notu silmek istiyor musun?')) return;
+
+        fetch(`/notes/delete/${noteId}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const card = document.getElementById(`note-${noteId}`);
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.8)';
+                    setTimeout(() => card.remove(), 300);
+                    showToast('Not silindi.', 'info');
+                }
+            });
+    }
+</script>
+{% endblock %}

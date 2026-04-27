@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotivaSyon - Giriş</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="auth-body">
+
+<!-- Animasyonlu arka plan partikülleri -->
+<div class="auth-bg">
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+</div>
+
+<div class="auth-container">
+
+    <!-- Sol panel - marka bilgisi -->
+    <div class="auth-brand-panel">
+        <div class="auth-brand-content">
+            <div class="auth-logo">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h1 class="auth-brand-name">MotivaSyon</h1>
+            <p class="auth-tagline">Her gün daha güçlü, daha kararlı, daha sen.</p>
+
+            <div class="auth-features">
+                <div class="auth-feature">
+                    <i class="fas fa-fire"></i>
+                    <span>Günlük motivasyon bildirimleri</span>
+                </div>
+                <div class="auth-feature">
+                    <i class="fas fa-bullseye"></i>
+                    <span>Hedef takip sistemi</span>
+                </div>
+                <div class="auth-feature">
+                    <i class="fas fa-book-open"></i>
+                    <span>Kişisel motivasyon günlüğü</span>
+                </div>
+                <div class="auth-feature">
+                    <i class="fas fa-medal"></i>
+                    <span>Başarı rozet sistemi</span>
+                </div>
+                <div class="auth-feature">
+                    <i class="fas fa-quote-left"></i>
+                    <span>İlham veren alıntı koleksiyonu</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sağ panel - login/register formu -->
+    <div class="auth-form-panel">
+        <div class="auth-form-card">
+
+            <!-- Flash mesajları -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- Tab seçimi -->
+            <div class="auth-tabs">
+                <button class="auth-tab {% if tab != 'register' %}active{% endif %}" onclick="showTab('login')">
+                    <i class="fas fa-sign-in-alt"></i> Giriş Yap
+                </button>
+                <button class="auth-tab {% if tab == 'register' %}active{% endif %}" onclick="showTab('register')">
+                    <i class="fas fa-user-plus"></i> Kayıt Ol
+                </button>
+            </div>
+
+            <!-- Giriş formu -->
+            <div id="loginForm" class="auth-form {% if tab == 'register' %}d-none{% endif %}">
+                <h2 class="form-heading">Tekrar Hoş Geldin</h2>
+                <p class="form-sub">Motivasyon yolculuğuna devam et.</p>
+
+                <form action="{{ url_for('auth.login') }}" method="post">
+                    <div class="input-group-custom">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="username" class="form-input" placeholder="Kullanıcı adı" required>
+                    </div>
+                    <div class="input-group-custom">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" name="password" class="form-input" placeholder="Şifre" required>
+                    </div>
+                    <button type="submit" class="btn-auth">
+                        <i class="fas fa-sign-in-alt me-2"></i>Giriş Yap
+                    </button>
+                </form>
+            </div>
+
+            <!-- Kayıt formu -->
+            <div id="registerForm" class="auth-form {% if tab != 'register' %}d-none{% endif %}">
+                <h2 class="form-heading">Yolculuğa Başla</h2>
+                <p class="form-sub">Ücretsiz hesap oluştur, motivasyonunu keşfet.</p>
+
+                <form action="{{ url_for('auth.register') }}" method="post">
+                    <div class="input-group-custom">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="username" class="form-input" placeholder="Kullanıcı adı" required minlength="3">
+                    </div>
+                    <div class="input-group-custom">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" name="email" class="form-input" placeholder="E-posta (opsiyonel)">
+                    </div>
+                    <div class="input-group-custom">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" name="password" class="form-input" placeholder="Şifre" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn-auth">
+                        <i class="fas fa-rocket me-2"></i>Hesap Oluştur
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Tab geçişini sağlıyorum
+    function showTab(tab) {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const tabs = document.querySelectorAll('.auth-tab');
+
+        if (tab === 'login') {
+            loginForm.classList.remove('d-none');
+            registerForm.classList.add('d-none');
+            tabs[0].classList.add('active');
+            tabs[1].classList.remove('active');
+        } else {
+            registerForm.classList.remove('d-none');
+            loginForm.classList.add('d-none');
+            tabs[1].classList.add('active');
+            tabs[0].classList.remove('active');
+        }
+    }
+</script>
+</body>
+</html>

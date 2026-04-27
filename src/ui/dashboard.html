@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - MotivaSyon{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Karşılama kartı - kullanıcı adı ve seri bilgisi -->
+<div class="welcome-card">
+    <div class="welcome-text">
+        <h2>Merhaba, <span class="highlight">{{ user['username'] }}</span>! 👋</h2>
+        <p>Bugün harika bir gün olacak. Motivasyonunu yüksek tut!</p>
+    </div>
+    <div class="streak-badge">
+        <div class="streak-fire">🔥</div>
+        <div class="streak-info">
+            <span class="streak-number">{{ user['streak'] }}</span>
+            <span class="streak-label">Günlük Seri</span>
+        </div>
+    </div>
+</div>
+
+<!-- İstatistik kartları -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg,#6C63FF,#a78bfa)">
+            <i class="fas fa-bullseye"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.goals_completed }}</span>
+            <span class="stat-label">Tamamlanan Hedef</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg,#43E97B,#38f9d7)">
+            <i class="fas fa-book-open"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.notes_count }}</span>
+            <span class="stat-label">Günlük Notu</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg,#FF6584,#ff8e53)">
+            <i class="fas fa-heart"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.favorites_count }}</span>
+            <span class="stat-label">Favori Alıntı</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg,#F7971E,#FFD200)">
+            <i class="fas fa-medal"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-number">{{ stats.badges_count }}</span>
+            <span class="stat-label">Kazanılan Rozet</span>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+
+    <!-- Günlük alıntı kartı -->
+    <div class="dashboard-card quote-card">
+        <div class="card-header-custom">
+            <h3><i class="fas fa-quote-left me-2"></i>Günün Alıntısı</h3>
+            <button class="btn-refresh" onclick="refreshQuote()" title="Yeni alıntı getir">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        <div class="quote-display" id="quoteDisplay">
+            {% if daily_quote %}
+            <blockquote class="daily-quote-text">{{ daily_quote['text'] }}</blockquote>
+            <cite class="daily-quote-author">— {{ daily_quote['author'] }}</cite>
+            <span class="quote-category-badge badge-{{ daily_quote['category'] }}">{{ daily_quote['category'] }}</span>
+            {% else %}
+            <p class="text-muted">Henüz alıntı yok.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Motivasyon gönder kartı -->
+    <div class="dashboard-card motivate-card">
+        <div class="motivate-icon">⚡</div>
+        <h3>Motivasyon Al</h3>
+        <p>Anlık motivasyon bildirimi gönder, kendin için bir ilham kaynağı yarat!</p>
+        <button class="btn-big-motivate" onclick="sendMotivation()">
+            <i class="fas fa-bolt me-2"></i>Motivasyonumu Güçlendir
+        </button>
+        <div class="motivate-hint">
+            <i class="fas fa-info-circle"></i>
+            Tarayıcı bildirimlerine de izin verirsen masaüstüne de gider!
+        </div>
+    </div>
+
+    <!-- Aktif hedefler listesi -->
+    <div class="dashboard-card goals-preview-card">
+        <div class="card-header-custom">
+            <h3><i class="fas fa-bullseye me-2"></i>Aktif Hedefler</h3>
+            <a href="{{ url_for('goals.goals') }}" class="btn-view-all">Tümünü Gör</a>
+        </div>
+
+        {% if active_goals %}
+        <div class="goals-preview-list">
+            {% for goal in active_goals %}
+            <div class="goal-preview-item">
+                <div class="goal-preview-info">
+                    <span class="goal-preview-title">{{ goal['title'] }}</span>
+                    <span class="goal-preview-cat">{{ goal['category'] or 'Genel' }}</span>
+                </div>
+                <div class="goal-preview-progress">
+                    <div class="progress-bar-mini">
+                        <div class="progress-fill-mini" style="width: {{ goal['progress'] }}%"></div>
+                    </div>
+                    <span class="progress-text-mini">{{ goal['progress'] }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-small">
+            <i class="fas fa-bullseye"></i>
+            <p>Henüz hedef eklemedin.</p>
+            <a href="{{ url_for('goals.goals') }}" class="btn-add-small">İlk Hedefini Ekle</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Son bildirimler -->
+    <div class="dashboard-card notifications-card">
+        <div class="card-header-custom">
+            <h3><i class="fas fa-bell me-2"></i>Son Bildirimler</h3>
+            {% if notifications %}
+            <button class="btn-read-all" onclick="markAllRead()">Tümünü Oku</button>
+            {% endif %}
+        </div>
+
+        {% if notifications %}
+        <div class="notif-list">
+            {% for notif in notifications %}
+            <div class="notif-item {% if not notif['is_read'] %}unread{% endif %}" id="notif-{{ notif['id'] }}"
+                 onclick="markRead({{ notif['id'] }})">
+                <div class="notif-icon-wrap notif-type-{{ notif['type'] }}">
+                    {% if notif['type'] == 'badge' %}<i class="fas fa-medal"></i>
+                    {% elif notif['type'] == 'goal' %}<i class="fas fa-bullseye"></i>
+                    {% else %}<i class="fas fa-bolt"></i>
+                    {% endif %}
+                </div>
+                <div class="notif-content">
+                    <strong>{{ notif['title'] }}</strong>
+                    <small>{{ notif['message'][:70] }}{% if notif['message']|length > 70 %}...{% endif %}</small>
+                </div>
+                {% if not notif['is_read'] %}<span class="unread-dot"></span>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-small">
+            <i class="fas fa-bell-slash"></i>
+            <p>Henüz bildirim yok.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Dashboard yüklendiğinde rozet kontrolü yapıyorum
+    document.addEventListener('DOMContentLoaded', function() {
+        checkBadges();
+    });
+</script>
+{% endblock %}

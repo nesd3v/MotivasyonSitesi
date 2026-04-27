@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MotivaSyon{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Benim özel CSS dosyam -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Sidebar navigasyon -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-logo">
+            <i class="fas fa-bolt"></i>
+        </div>
+        <span class="brand-name">MotivaSyon</span>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('main.dashboard') }}" class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('goals.goals') }}" class="nav-item {% if request.endpoint and 'goals' in request.endpoint %}active{% endif %}">
+            <i class="fas fa-bullseye"></i>
+            <span>Hedeflerim</span>
+        </a>
+        <a href="{{ url_for('quotes.collection') }}" class="nav-item {% if request.endpoint and 'quotes' in request.endpoint %}active{% endif %}">
+            <i class="fas fa-quote-left"></i>
+            <span>Alıntılar</span>
+        </a>
+        <a href="{{ url_for('notes.notes') }}" class="nav-item {% if request.endpoint and 'notes' in request.endpoint %}active{% endif %}">
+            <i class="fas fa-book-open"></i>
+            <span>Günlüğüm</span>
+        </a>
+        <a href="{{ url_for('profile.profile') }}" class="nav-item {% if request.endpoint == 'profile.profile' %}active{% endif %}">
+            <i class="fas fa-medal"></i>
+            <span>Profil & Rozetler</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar">{{ session.get('username', '?')[0].upper() }}</div>
+            <div class="user-details">
+                <span class="user-name">{{ session.get('username', '') }}</span>
+                <span class="user-role">Motivasyon Yolcusu</span>
+            </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="Çıkış Yap">
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
+    </div>
+</div>
+
+<!-- Mobil sidebar overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Ana içerik alanı -->
+<div class="main-content" id="mainContent">
+
+    <!-- Üst bar -->
+    <div class="topbar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+
+        <div class="topbar-actions">
+            <!-- Motivasyon al butonu -->
+            <button class="btn-motivate" id="motivateBtn" onclick="sendMotivation()">
+                <i class="fas fa-bolt"></i>
+                <span>Motivasyon Al</span>
+            </button>
+
+            <!-- Bildirim zili -->
+            <div class="notification-bell" onclick="toggleNotifPanel()">
+                <i class="fas fa-bell"></i>
+                {% if unread_count is defined and unread_count > 0 %}
+                <span class="notif-badge">{{ unread_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash mesajları -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Sayfa içeriği -->
+    <div class="page-content">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<!-- Motivasyon bildirimi popup modal -->
+<div class="motivation-popup" id="motivationPopup">
+    <div class="popup-header">
+        <span class="popup-icon">💪</span>
+        <span id="popupTitle">Günlük Motivasyon</span>
+        <button onclick="closePopup()" class="popup-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="popup-body">
+        <blockquote id="popupQuote"></blockquote>
+        <cite id="popupAuthor"></cite>
+    </div>
+</div>
+
+<!-- Rozet kazanıldı bildirimi -->
+<div class="badge-popup" id="badgePopup">
+    <div class="badge-popup-inner">
+        <div class="badge-icon-large" id="badgeIcon">🏅</div>
+        <div class="badge-popup-text">
+            <strong id="badgeName"></strong>
+            <small id="badgeDesc"></small>
+        </div>
+    </div>
+</div>
+
+<!-- Toast bildirim -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>
