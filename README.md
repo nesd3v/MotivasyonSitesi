@@ -1,4 +1,4 @@
-# MotivaSyon - Web Tabanlı Dinamik Motivasyon Bildirim Sistemi
+# Motivasyon - Web Tabanlı Dinamik Motivasyon Bildirim Sistemi
 
 ## Proje Açıklaması
 MotivaSyon, kullanıcıların günlük motivasyonunu yüksek tutmasına yardımcı olan, web tabanlı dinamik bir uygulamadır. Tek bir butona basarak anında motivasyon bildirimi alabilir, hedeflerinizi takip edebilir, kişisel günlüğünüzü tutabilir ve başarı rozetleri kazanabilirsiniz.
